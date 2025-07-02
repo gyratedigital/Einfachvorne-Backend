@@ -2,6 +2,7 @@ import express,{Request, Response} from 'express'
 import bodyParser from 'body-parser'
 import cookieParser from 'cookie-parser'
 import cors from 'cors';
+import { userAuthRouter } from './routes/index.js';
 // import { client } from './config/clients/index.js'
 
 
@@ -31,13 +32,13 @@ app.use(bodyParser.json({limit:'20mb'}))
 
 app.use(cookieParser())
 
-// app.use('/dashboard',dashboardRouter)
+app.use('/auth',userAuthRouter)
 // app.use('/',regionRouter)
 // app.use('/',destinationRouter)
 // app.use('/',resourceRouter)
 
 app.get("/",(req:Request, res:Response)=>{
-    res.send("This is Ausflugliebe Backend Server Version 1.0.1")
+    res.send("This is Einfachvrone Backend Server Version 1.0.1")
 })
 
 app.listen(3000,()=>{

@@ -17,7 +17,7 @@ router.post('/create-account', async (req, res) => {
   }
 
   try {
-    const existing = await client.dashboard_users.findFirst({
+    const existing = await client.users.findFirst({
       where: { email },
     });
     if (existing) {
@@ -26,7 +26,7 @@ router.post('/create-account', async (req, res) => {
     }
 
     const hashed = await bcrypt.hash(password, 10);
-    const newUser = await client.dashboard_users.create({
+    const newUser = await client.users.create({
       data: { email, password: hashed, first_name, last_name, role: 'support' },
     });
 
@@ -53,7 +53,7 @@ router.post('/login', async (req, res) => {
     return
   }
   try {
-    const user = await client.dashboard_users.findFirst({ where: { email } });
+    const user = await client.users.findFirst({ where: { email } });
     if (!user) {
       res.status(400).send({ data: null, error: 'Invalid Email or Password', user:null })
       return

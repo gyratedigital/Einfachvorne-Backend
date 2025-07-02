@@ -2,6 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+// import { client } from './config/clients/index.js'
 const app = express();
 // const PORT = parseInt(process.env.PORT || '') || 3000
 app.use(cors({
