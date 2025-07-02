@@ -15,3 +15,9 @@ model users {
   name       String?
   role       String?
 }
+
+model user_sessions {
+  user_id    String   @id @db.Uuid
+  token      String
+  expires_at DateTime @db.Timestamptz(6)
+}
