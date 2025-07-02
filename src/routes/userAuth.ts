@@ -9,9 +9,9 @@ const router = Router();
 
 
 router.post('/create-account', async (req, res) => {
-  const { email, password, first_name, last_name } = req.body;
+  const { email, password, name } = req.body;
 
-  if (!email || !password || !first_name || !last_name) {
+  if (!email || !password || name) {
     res.status(400).send({ data: null, error: 'Missing required fields', user:null });
     return
   }
@@ -27,13 +27,13 @@ router.post('/create-account', async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
     const newUser = await client.users.create({
-      data: { email, password: hashed, first_name, last_name, role: 'support' },
+      data: { email, password: hashed, name, role: 'user' },
     });
 
     const token = jwt.sign({ userId: newUser.id }, process.env.JWT_SECRET!, { expiresIn: '3d' });
 
     res.status(200).send({ data: token, error: null, user:{
-      first_name: newUser.first_name,
+      name: newUser.name,
       email: newUser.email,
       type: newUser.role,
     }  });
@@ -67,7 +67,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '3d' });
     res.status(200).send({ data: token, error: null, user:{
-      first_name: user.first_name,
+      name: user.name,
       email: user.email,
       type: user.role,
     } });
