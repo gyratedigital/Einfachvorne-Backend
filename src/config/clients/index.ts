@@ -8,8 +8,8 @@ export const client = globalForPrisma.client ?? new PrismaClient({
 })
 import Stripe from 'stripe'
 
-let StripeSecret = process.env.STRIPE_SECRET || ''
-export const stripeClient = new Stripe(StripeSecret, {
-    apiVersion: '2025-05-28.basil',
-    telemetry: false,
-})
+// let StripeSecret = process.env.STRIPE_SECRET || ''
+// export const stripeClient = new Stripe(StripeSecret, {
+//     apiVersion: '2025-05-28.basil',
+//     telemetry: false,
+// })
