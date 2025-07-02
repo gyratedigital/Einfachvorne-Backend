@@ -11,7 +11,7 @@ const router = Router();
 router.post('/create-account', async (req, res) => {
   const { email, password, name } = req.body;
 
-  if (!email || !password || name) {
+  if (!email || !password || !name) {
     res.status(400).send({ data: null, error: 'Missing required fields', user:null });
     return
   }
@@ -24,7 +24,6 @@ router.post('/create-account', async (req, res) => {
       res.status(400).send({ data: null, error: 'User already exists', user:null })
       return
     }
-
     const hashed = await bcrypt.hash(password, 10);
     const newUser = await client.users.create({
       data: { email, password: hashed, name, role: 'user' },
