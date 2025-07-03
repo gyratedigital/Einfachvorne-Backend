@@ -8,16 +8,41 @@ datasource db {
 }
 
 model users {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email      String
-  password   String
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  name       String?
-  role       String?
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String
+  password      String
+  created_at    DateTime?      @default(now()) @db.Timestamptz(6)
+  name          String?
+  role          String?
+  listings      listings[]
+  user_sessions user_sessions?
 }
 
 model user_sessions {
   user_id    String   @id @db.Uuid
   token      String
   expires_at DateTime @db.Timestamptz(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model listing_categories {
+  id       String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String?
+  slug     String?
+  listings listings[]
+}
+
+model listings {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_name       String
+  category           String             @db.Uuid
+  address            String?
+  telephone          String?
+  email              String?
+  website_url        String?
+  description        String?
+  created_by         String             @db.Uuid
+  created_at         DateTime?          @default(now()) @db.Timestamptz(6)
+  listing_categories listing_categories @relation(fields: [category], references: [id], onDelete: Cascade)
+  users              users              @relation(fields: [created_by], references: [id], onDelete: Cascade)
 }
