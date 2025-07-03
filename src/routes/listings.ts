@@ -72,4 +72,35 @@ router.post(
     }
   }
 );
+
+router.get(
+  "/all-listings",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ data: null, error: "Unauthorized User" });
+      return;
+    }
+    try {
+      const listings = await client.listings.findMany({
+        where: {
+          created_by: userId,
+        },
+      });
+
+      res.status(200).send({
+        data: listings,
+        error: null,
+      });
+      return
+    } catch (error) {
+      console.error("Error fetching all listings :", error);
+      res.status(500).send({
+        data: null,
+        error: "Internal Server Error",
+      });
+    }
+  }
+);
 export { router };
