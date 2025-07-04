@@ -1,6 +1,6 @@
 import { Request, Response, Router } from "express";
 import { client } from "../config/clients/index.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticateToken } from "../middleware/auth.js";
 import { AuthRequest } from "../utils/types.js";

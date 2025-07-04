@@ -30,7 +30,7 @@ app.use("/auth", userAuthRouter);
 app.use("/", listingsRouter);
 
 app.get("/", (req: Request, res: Response) => {
-  res.send("This is Einfachvrone Backend Server Version 1.0.1");
+  res.send("This is Einfachvorne Backend Server Version 1.0.1");
 });
 
 app.listen(3000, () => {
