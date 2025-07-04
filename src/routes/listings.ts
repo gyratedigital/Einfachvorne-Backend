@@ -94,25 +94,46 @@ router.get(
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
+
     if (!userId) {
-      res.status(401).json({ data: null, error: "Unauthorized User" });
-      return;
+       res.status(401).json({ data: null, error: "Unauthorized User" });
+       return
     }
+
     try {
       const listings = await client.listings.findMany({
         where: {
           created_by: userId,
         },
+        include: {
+          listing_categories: {
+            select: {
+              name: true,
+            },
+          },
+        },
       });
 
-      res.status(200).send({
-        data: listings,
+      const formattedListings = listings.map((item) => ({
+        id: item.id,
+        company_name: item.company_name,
+        address: item.address,
+        description: item.description,
+        telephone: item.telephone,
+        created_at: item.created_at,
+        category: item.listing_categories?.name ?? null, 
+        email: item.email,
+        website_url: item.website_url,
+      }));
+
+      res.status(200).json({
+        data: formattedListings,
         error: null,
       });
-      return;
+      return
     } catch (error) {
-      console.error("Error fetching all listings :", error);
-      res.status(500).send({
+      console.error("Error fetching all listings:", error);
+      res.status(500).json({
         data: null,
         error: "Internal Server Error",
       });
@@ -120,12 +141,19 @@ router.get(
   }
 );
 
+
 router.post(
   "/edit-listing",
   authenticateToken,
   async (req: AuthRequest, res: Response) => {
     const { company_name, category, description, listing_id } = req.body;
+    const userId = req.userId
+    if(!userId){
+       res.status(401).json({ data: null, error: "Unauthorized user" });
+        return;
+    }
     try {
+
       if (!listing_id) {
         res.status(400).json({ data: null, error: "No listing found to edit" });
         return;
@@ -134,6 +162,21 @@ router.post(
         res.status(400).json({ data: null, error: "No Changes found" });
         return;
       }
+      const listing  = await client.listings.findFirst({
+        where:{
+          id:listing_id
+        },
+        select:{
+          created_by:true,
+          id:true,
+        }
+      })
+
+      if(listing && listing.created_by !== userId){
+         res.status(400).json({ data: null, error: "Sie haben keine Berechtigung, dieses Unternehmen zu bearbeiten" });
+        return;
+      }
+
       const updateData: Record<string, any> = {};
       if (company_name) updateData.company_name = company_name;
       if (category) updateData.category = category;
