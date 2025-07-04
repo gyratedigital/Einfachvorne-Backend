@@ -239,4 +239,50 @@ router.post(
     }
   }
 );
+
+router.post(
+  "/listings",
+  async (req: AuthRequest, res: Response) => {
+    
+    const {page} = req.body
+
+    try {
+      const listings = await client.listings.findMany({
+        take: 6,
+            skip: (page - 1) * 6,
+        include: {
+          listing_categories: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      const formattedListings = listings.map((item) => ({
+        id: item.id,
+        company_name: item.company_name,
+        address: item.address,
+        description: item.description,
+        telephone: item.telephone,
+        created_at: item.created_at,
+        category: item.listing_categories?.name ?? null, 
+        email: item.email,
+        website_url: item.website_url,
+      }));
+
+      res.status(200).json({
+        data: formattedListings,
+        error: null,
+      });
+      return
+    } catch (error) {
+      console.error("Error fetching all listings:", error);
+      res.status(500).json({
+        data: null,
+        error: "Internal Server Error",
+      });
+    }
+  }
+);
 export { router };
