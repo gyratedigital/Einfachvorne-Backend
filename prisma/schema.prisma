@@ -8,14 +8,15 @@ datasource db {
 }
 
 model users {
-  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email         String
-  password      String
-  created_at    DateTime?      @default(now()) @db.Timestamptz(6)
-  name          String?
-  role          String?
-  listings      listings[]
-  user_sessions user_sessions?
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email              String
+  password           String
+  created_at         DateTime?      @default(now()) @db.Timestamptz(6)
+  name               String?
+  role               String?
+  stripe_customer_id String?
+  listings           listings[]
+  user_sessions      user_sessions?
 }
 
 model user_sessions {
