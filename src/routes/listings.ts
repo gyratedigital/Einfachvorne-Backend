@@ -163,7 +163,6 @@ router.post(
 
 router.post(
   "/search-listing",
-  authenticateToken,
   async (req: AuthRequest, res: Response) => {
     const { company_name } = req.body;
     try {
