@@ -10,10 +10,12 @@ const app = express();
 // const PORT = parseInt(process.env.PORT || '') || 3000
 app.use(
   cors({
-    origin: ["http://localhost:4321", "https://api.stripe.com"],
+    origin: ["http://localhost:4321", 
+      "http://localhost:3000",
+      "https://api.stripe.com"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true, // Allow cookies to be sent with requests
+    credentials: true, 
   })
 );
 // app.use('/', stripeRouter)
