@@ -49,6 +49,19 @@ router.post(
         return;
       }
 
+      const existingListing = await client.listings.findFirst({
+        where: {
+          company_name: company_name,
+        },
+      });
+      if (existingListing) {
+        res.status(400).send({
+          data: null,
+          error: "Es existiert bereits ein Unternehmen mit diesem Namen.",
+        });
+        return;
+      }
+
       const newListing = await client.listings.create({
         data: {
           created_by: userId,
@@ -144,6 +157,43 @@ router.post(
         );
       }
       res.status(500).json({ data: null, error: "Internal Server Error" });
+    }
+  }
+);
+
+router.post(
+  "/search-listing",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const { company_name } = req.body;
+    try {
+      if (!company_name || company_name === "") {
+        res
+          .status(400)
+          .json({
+            data: null,
+            error: "Geben Sie für die Suche einen Firmennamen ein",
+          });
+        return;
+      }
+      const listings = await client.listings.findMany({
+        where: {
+          company_name: {
+            contains: company_name,
+            mode: "insensitive",
+          },
+        },
+      });
+      if (listings.length == 0) {
+        res.status(400).json({ data: null, error: "Kein Eintrag gefunden" });
+        return;
+      } else {
+        res.status(200).json({ data: listings, error: null });
+        return;
+      }
+    } catch (error) {
+      res.status(500).json({ data: null, error: "Internal Server Error" });
+      return;
     }
   }
 );
