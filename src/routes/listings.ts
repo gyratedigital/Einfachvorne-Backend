@@ -12,7 +12,7 @@ router.get("/categories", authenticateToken, async (req, res) => {
       data: categories,
       error: null,
     });
-    return
+    return;
   } catch (error) {
     res.status(500).send({
       data: null,
@@ -96,13 +96,54 @@ router.get(
         data: listings,
         error: null,
       });
-      return
+      return;
     } catch (error) {
       console.error("Error fetching all listings :", error);
       res.status(500).send({
         data: null,
         error: "Internal Server Error",
       });
+    }
+  }
+);
+
+router.post(
+  "/edit-listing",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const { company_name, category, description, listing_id } = req.body;
+    try {
+      if (!listing_id) {
+        res.status(400).json({ data: null, error: "No listing found to edit" });
+        return;
+      }
+      if (!company_name && !category && !description) {
+        res.status(400).json({ data: null, error: "No Changes found" });
+        return;
+      }
+      const updateData: Record<string, any> = {};
+      if (company_name) updateData.company_name = company_name;
+      if (category) updateData.category = category;
+      if (description) updateData.description = description;
+
+      await client.listings.update({
+        where: {
+          id: listing_id,
+        },
+        data: updateData,
+      });
+      res
+        .status(200)
+        .json({ data: "Listing updated successfully", error: null });
+      return;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(
+          `Error updating listing with ID ${listing_id}`,
+          error.message
+        );
+      }
+      res.status(500).json({ data: null, error: "Internal Server Error" });
     }
   }
 );
