@@ -2,6 +2,8 @@ import { Request, Response, Router } from "express";
 import { client } from "../config/clients/index.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { authenticateToken } from "../middleware/auth.js";
+import { AuthRequest } from "../utils/types.js";
 
 const router = Router();
 
@@ -106,7 +108,6 @@ router.post("/login", async (req, res) => {
       const sessionExpired = new Date(existingSession.expires_at) < now;
 
       if (sessionExpired) {
-        
         token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
           expiresIn: "3d",
         });
@@ -122,11 +123,9 @@ router.post("/login", async (req, res) => {
           },
         });
       } else {
-        
         token = existingSession.token;
       }
     } else {
-      
       token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, {
         expiresIn: "3d",
       });
@@ -162,5 +161,28 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.post("/logout", authenticateToken, async (req: AuthRequest, res:Response) => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).send({ data: null, error: "Unauthorized user" });
+      return;
+    }
+
+    await client.user_sessions.delete({
+      where: {
+        user_id: userId,
+      },
+    });
+    res.status(200).send({ data: "Successfully logged out.", error: null });
+    return;
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Error while logging out", error.message);
+    }
+
+    res.status(500).send({ data: null, error: "Internal Server Error" });
+  }
+});
 
 export { router };

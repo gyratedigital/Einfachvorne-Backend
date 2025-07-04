@@ -12,6 +12,7 @@ router.get("/categories", authenticateToken, async (req, res) => {
       data: categories,
       error: null,
     });
+    return
   } catch (error) {
     res.status(500).send({
       data: null,
@@ -45,6 +46,7 @@ router.post(
           data: null,
           error: "Missing required values",
         });
+        return;
       }
 
       const newListing = await client.listings.create({
@@ -63,6 +65,7 @@ router.post(
         data: "New listing created",
         error: null,
       });
+      return;
     } catch (error) {
       console.error("Error creating a new listing:", error);
       res.status(500).send({
