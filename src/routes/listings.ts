@@ -297,6 +297,7 @@ router.post(
           listing_categories: {
             select: {
               name: true,
+              id:true
             },
           },
         },
@@ -309,7 +310,10 @@ router.post(
           description: listing.description,
           telephone: listing.telephone,
           created_at: listing.created_at,
-          category: listing.listing_categories?.name ?? null,
+          category: {
+            id:listing.listing_categories?.id,
+            name:listing.listing_categories?.name,
+          },
           email: listing.email,
           website_url: listing.website_url,
         };
