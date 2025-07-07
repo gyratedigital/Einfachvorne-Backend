@@ -12,6 +12,7 @@ app.use(
   cors({
     origin: ["http://localhost:4321", 
       "http://localhost:3000",
+      "http://j0so08gs8w8cco4gkssw4go0.152.53.178.79.sslip.io",
       "https://api.stripe.com"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
