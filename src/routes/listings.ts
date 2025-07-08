@@ -239,11 +239,12 @@ router.post("/search-listing", async (req: AuthRequest, res: Response) => {
 
 router.post("/listings", async (req: AuthRequest, res: Response) => {
   const { page } = req.body;
-
+const perPage = 6;
   try {
+    const totalCount = await client.listings.count();
     const listings = await client.listings.findMany({
-      take: 6,
-      skip: (page - 1) * 6,
+      take: perPage,
+      skip: (page - 1) * perPage,
       include: {
         listing_categories: {
           select: {
@@ -252,7 +253,7 @@ router.post("/listings", async (req: AuthRequest, res: Response) => {
         },
       },
     });
-
+const totalPages = Math.ceil(totalCount / perPage);
     const formattedListings = listings.map((item:any) => ({
       id: item.id,
       company_name: item.company_name,
@@ -267,6 +268,8 @@ router.post("/listings", async (req: AuthRequest, res: Response) => {
 
     res.status(200).json({
       data: formattedListings,
+      totalPages,
+      currentPage: page,
       error: null,
     });
     return;
