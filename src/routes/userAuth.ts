@@ -185,4 +185,59 @@ router.post("/logout", authenticateToken, async (req: AuthRequest, res:Response)
   }
 });
 
+router.get("/user-info", authenticateToken, async (req: any, res:any) => {
+  try {
+    const user = await client.users.findUnique({
+      where: { id: req.userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found", user: null });
+    }
+
+    res.status(200).json({ user, error: null });
+  } catch (err) {
+    console.error("Error fetching user:", err);
+    res.status(500).json({ error: "Internal server error", user: null });
+  }
+});
+
+router.put("/update-user-info", authenticateToken,  async (req: any, res:any) => {
+  const { name, email } = req.body;
+
+  if (!name && !email) {
+    return res.status(400).json({ error: "No data to update" });
+  }
+
+  try {
+    const updated = await client.users.update({
+      where: { id: req.userId },
+      data: {
+        ...(name && { name }),
+        ...(email && { email }),
+      },
+    });
+
+    res.status(200).json({
+      message: "User updated successfully",
+      user: {
+        name: updated.name,
+        email: updated.email,
+        role: updated.role,
+      },
+    });
+  } catch (err) {
+    console.error("Error updating user:", err);
+    res.status(500).json({ error: "Failed to update user" });
+  }
+});
+
+
+
 export { router };
