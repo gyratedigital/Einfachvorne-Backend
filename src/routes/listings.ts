@@ -114,7 +114,7 @@ router.get(
         },
       });
 
-      const formattedListings = listings.map((item) => ({
+      const formattedListings = listings.map((item:any) => ({
         id: item.id,
         company_name: item.company_name,
         address: item.address,
@@ -253,7 +253,7 @@ router.post("/listings", async (req: AuthRequest, res: Response) => {
       },
     });
 
-    const formattedListings = listings.map((item) => ({
+    const formattedListings = listings.map((item:any) => ({
       id: item.id,
       company_name: item.company_name,
       address: item.address,
@@ -282,6 +282,63 @@ router.post("/listings", async (req: AuthRequest, res: Response) => {
 router.post(
   "/view-my-listing",
   authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    const { listing_id } = req.body;
+
+    try {
+      const listing = await client.listings.findFirst({
+        where: {
+          id: listing_id,
+          created_by: userId,
+        },
+
+        include: {
+          listing_categories: {
+            select: {
+              name: true,
+              id:true
+            },
+          },
+        },
+      });
+      if (listing) {
+        const formattedListing = {
+          id: listing.id,
+          company_name: listing.company_name,
+          address: listing.address,
+          description: listing.description,
+          telephone: listing.telephone,
+          created_at: listing.created_at,
+          category: {
+            id:listing.listing_categories?.id,
+            name:listing.listing_categories?.name,
+          },
+          email: listing.email,
+          website_url: listing.website_url,
+        };
+        res.status(200).json({
+          data: formattedListing,
+          error: null,
+        });
+        return;
+      } else {
+        res.status(400).json({
+          data: null,
+          error: "Business not found",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching all listings:", error);
+      res.status(500).json({
+        data: null,
+        error: "Internal Server Error",
+      });
+    }
+  }
+);
+router.post(
+  "/listing-detail",
   async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
     const { listing_id } = req.body;
