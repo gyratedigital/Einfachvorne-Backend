@@ -20,7 +20,7 @@ router.get('/products', async (req: Request, res: Response) => {
       const price = product.default_price as Stripe.Price;
 
       const amount = price?.unit_amount ?? 0;
-      const currency = price?.currency?.toUpperCase() ?? 'USD';
+      const currency = '€';
 
       const formattedPrice = `${amount / 100} ${currency}`;
 
