@@ -16,7 +16,23 @@ router.get('/products', async (req: Request, res: Response) => {
       limit: 10,
       expand: ['data.default_price'], 
     });
-    res.json({ success: true, data: products.data });
+     const formattedProducts = products.data.map((product) => {
+      const price = product.default_price as Stripe.Price;
+
+      const amount = price?.unit_amount ?? 0;
+      const currency = price?.currency?.toUpperCase() ?? 'USD';
+
+      const formattedPrice = `${amount / 100} ${currency}`;
+
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        features: product.metadata?.marketing_features || null,
+        price: formattedPrice,
+      };
+    });
+    res.json({ success: true, data: formattedProducts });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
