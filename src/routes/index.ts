@@ -2,5 +2,6 @@
 // export {router as regionRouter} from './region.js'
 export {router as userAuthRouter} from './userAuth.js'
 export {router as listingsRouter} from './listings.js'
+export {router as StripeRouter} from './stripe.js'
 // export {router as stripeRouter} from './stripe.js'
 // export {router as resourceRouter} from './resource.js'

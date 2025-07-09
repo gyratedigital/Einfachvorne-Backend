@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import { listingsRouter, userAuthRouter } from "./routes/index.js";
+import { listingsRouter, StripeRouter, userAuthRouter } from "./routes/index.js";
 // import { client } from './config/clients/index.js'
 
 const app = express();
@@ -29,11 +29,12 @@ app.use(cookieParser());
 
 app.use("/auth", userAuthRouter);
 app.use("/", listingsRouter);
+app.use("/stripe", StripeRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("This is Einfachvorne Backend Server Version 1.0.1");
 });
 
-app.listen(3000, () => {
+app.listen(3008, () => {
   console.log("server running at port 3000 ");
 });
