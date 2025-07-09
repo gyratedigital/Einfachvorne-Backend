@@ -35,6 +35,6 @@ app.get("/", (req: Request, res: Response) => {
   res.send("This is Einfachvorne Backend Server Version 1.0.1");
 });
 
-app.listen(3008, () => {
+app.listen(3000, () => {
   console.log("server running at port 3000 ");
 });
