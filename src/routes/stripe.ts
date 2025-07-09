@@ -6,13 +6,18 @@ import { AuthRequest } from '../utils/types.js';
 
 const router = Router();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+   apiVersion: '2025-06-30.basil'
+});
 
 
 router.get('/products', async (req: Request, res: Response) => {
   try {
     
-    const products = await stripe.products.list({ limit: 10 });
+    const products = await stripe.products.list({
+      limit: 10,
+      expand: ['data.default_price'], 
+    });
     res.json({ success: true, data: products.data });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
