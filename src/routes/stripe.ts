@@ -28,7 +28,7 @@ router.get('/products', async (req: Request, res: Response) => {
         id: product.id,
         name: product.name,
         description: product.description,
-        features: product.metadata?.marketing_features || null,
+        features: product?.marketing_features || null,
         price: formattedPrice,
       };
     });
