@@ -6,9 +6,7 @@ import { AuthRequest } from '../utils/types.js';
 
 const router = Router();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-   apiVersion: '2025-06-30.basil',
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 
 router.get('/products', async (req: Request, res: Response) => {
