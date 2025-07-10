@@ -98,6 +98,27 @@ router.post("/subscribe", authenticateToken, async (req: any, res: any) => {
   }
 });
 
+router.post("/user-portal", authenticateToken, async (req: any, res: any) => {
+  try {
+    const user = await client.users.findUnique({
+      where: { id: req.userId },
+    });
+
+    if (!user || !user.stripe_customer_id) {
+      return res.status(400).json({ error: "No Stripe customer found." });
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: user.stripe_customer_id,
+      return_url: `${process.env.CLIENT_URL}/dashboard`, // Or wherever you want to return after
+    });
+
+    res.json({ url: session.url });
+  } catch (err: any) {
+    console.error("Error creating portal session:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 
 
