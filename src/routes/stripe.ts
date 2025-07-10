@@ -83,7 +83,7 @@ router.post("/subscribe", authenticateToken, async (req: any, res: any) => {
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: { userId },
-      success_url: `${process.env.CLIENT_URL}/`,
+      success_url: `${process.env.CLIENT_URL}/payment-success`,
       cancel_url: `${process.env.CLIENT_URL}/payment-cancelled`,
     });
 
