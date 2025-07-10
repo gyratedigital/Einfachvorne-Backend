@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { authenticateToken } from "../middleware/auth.js";
 import { AuthRequest } from "../utils/types.js";
+import Stripe from "stripe";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const router = Router();
 
@@ -185,8 +187,10 @@ router.post("/logout", authenticateToken, async (req: AuthRequest, res:Response)
   }
 });
 
-router.get("/user-info", authenticateToken, async (req: any, res:any) => {
+router.get("/user-info", authenticateToken, async (req: any, res: any) => {
   try {
+    console.log("➡️ Fetching user with ID:", req.userId);
+
     const user = await client.users.findUnique({
       where: { id: req.userId },
       select: {
@@ -194,19 +198,89 @@ router.get("/user-info", authenticateToken, async (req: any, res:any) => {
         name: true,
         email: true,
         role: true,
+        stripe_customer_id: true,
       },
     });
 
     if (!user) {
+      console.log("❌ User not found");
       return res.status(404).json({ error: "User not found", user: null });
     }
 
-    res.status(200).json({ user, error: null });
-  } catch (err) {
-    console.error("Error fetching user:", err);
-    res.status(500).json({ error: "Internal server error", user: null });
+    console.log("✅ User found:", user);
+
+    let subscriptionInfo = null;
+
+    if (user.stripe_customer_id) {
+      console.log("➡️ Fetching Stripe subscriptions for customer:", user.stripe_customer_id);
+
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripe_customer_id,
+        status: "all",
+        expand: ["data.items.data.price"],
+        limit: 1,
+      });
+
+      const subscription = subscriptions.data[0];
+
+      if (subscription) {
+        const item = subscription.items.data[0];
+        const price = item?.price;
+
+        let productName: string | undefined = undefined;
+        if (price?.product && typeof price.product === "string") {
+          try {
+            const product = await stripe.products.retrieve(price.product);
+            productName = product.name;
+          } catch (productErr: any) {
+            console.warn("⚠️ Failed to fetch product name:", productErr.message);
+          }
+        }
+
+        subscriptionInfo = {
+          id: subscription.id,
+          status: subscription.status,
+          cancel_at_period_end: subscription.cancel_at_period_end,
+          // current_period_start: subscription.current_period_start
+          //   ? new Date(subscription.current_period_start * 1000)
+          //   : null,
+          // current_period_end: subscription.current_period_end
+          //   ? new Date(subscription.current_period_end * 1000)
+          //   : null,
+          created: subscription.created
+            ? new Date(subscription.created * 1000)
+            : null,
+          price: {
+            id: price?.id,
+            amount: price?.unit_amount ? price.unit_amount / 100 : null,
+            currency: price?.currency?.toUpperCase(),
+            interval: price?.recurring?.interval,
+            product_name: productName,
+          },
+          payment_method: subscription.default_payment_method,
+          customer: subscription.customer,
+        };
+      } else {
+        console.log("ℹ️ No active or past subscriptions found.");
+      }
+    } else {
+      console.log("ℹ️ User does not have a Stripe customer ID.");
+    }
+
+    const { stripe_customer_id, ...userData } = user;
+
+    return res.status(200).json({
+      user: userData,
+      subscription: subscriptionInfo,
+      error: null,
+    });
+  } catch (err: any) {
+    console.error("🔥 Error in /user-info route:", err);
+    return res.status(500).json({ error: "Internal server error", user: null });
   }
 });
+
+
 
 router.put("/update-user-info", authenticateToken,  async (req: any, res:any) => {
   const { name, email } = req.body;
