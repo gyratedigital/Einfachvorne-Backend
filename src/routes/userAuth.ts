@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { authenticateToken } from "../middleware/auth.js";
 import { AuthRequest } from "../utils/types.js";
 import Stripe from "stripe";
+import { formatGermanDate } from "../utils/functions.js";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const router = Router();
@@ -163,29 +164,33 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/logout", authenticateToken, async (req: AuthRequest, res:Response) => {
-  try {
-    const userId = req.userId;
-    if (!userId) {
-      res.status(401).send({ data: null, error: "Unauthorized user" });
+router.post(
+  "/logout",
+  authenticateToken,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.userId;
+      if (!userId) {
+        res.status(401).send({ data: null, error: "Unauthorized user" });
+        return;
+      }
+
+      await client.user_sessions.delete({
+        where: {
+          user_id: userId,
+        },
+      });
+      res.status(200).send({ data: "Successfully logged out.", error: null });
       return;
-    }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Error while logging out", error.message);
+      }
 
-    await client.user_sessions.delete({
-      where: {
-        user_id: userId,
-      },
-    });
-    res.status(200).send({ data: "Successfully logged out.", error: null });
-    return;
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error while logging out", error.message);
+      res.status(500).send({ data: null, error: "Internal Server Error" });
     }
-
-    res.status(500).send({ data: null, error: "Internal Server Error" });
   }
-});
+);
 
 router.get("/user-info", authenticateToken, async (req: any, res: any) => {
   try {
@@ -210,9 +215,13 @@ router.get("/user-info", authenticateToken, async (req: any, res: any) => {
     console.log("✅ User found:", user);
 
     let subscriptionInfo = null;
+   
 
     if (user.stripe_customer_id) {
-      console.log("➡️ Fetching Stripe subscriptions for customer:", user.stripe_customer_id);
+      console.log(
+        "➡️ Fetching Stripe subscriptions for customer:",
+        user.stripe_customer_id
+      );
 
       const subscriptions = await stripe.subscriptions.list({
         customer: user.stripe_customer_id,
@@ -221,11 +230,17 @@ router.get("/user-info", authenticateToken, async (req: any, res: any) => {
         limit: 1,
       });
 
-      const subscription = subscriptions.data[0];
+      const subscription = subscriptions.data[0] as Stripe.Subscription;
+   
 
-      if (subscription && (subscription.status === "past_due" || subscription.status === "active")) {
+      if (
+        subscription &&
+        (subscription.status === "past_due" || subscription.status === "active")
+      ) {
         const item = subscription.items.data[0];
         const price = item?.price;
+        const start = item?.current_period_start;
+        const end = item?.current_period_end;
 
         let productName: string | undefined = undefined;
         if (price?.product && typeof price.product === "string") {
@@ -233,7 +248,10 @@ router.get("/user-info", authenticateToken, async (req: any, res: any) => {
             const product = await stripe.products.retrieve(price.product);
             productName = product.name;
           } catch (productErr: any) {
-            console.warn("⚠️ Failed to fetch product name:", productErr.message);
+            console.warn(
+              "⚠️ Failed to fetch product name:",
+              productErr.message
+            );
           }
         }
 
@@ -241,12 +259,9 @@ router.get("/user-info", authenticateToken, async (req: any, res: any) => {
           id: subscription.id,
           status: subscription.status,
           cancel_at_period_end: subscription.cancel_at_period_end,
-          // current_period_start: subscription.current_period_start
-          //   ? new Date(subscription.current_period_start * 1000)
-          //   : null,
-          // current_period_end: subscription.current_period_end
-          //   ? new Date(subscription.current_period_end * 1000)
-          //   : null,
+          current_period_start: formatGermanDate(start) ,
+          current_period_end:formatGermanDate(end),
+
           created: subscription.created
             ? new Date(subscription.created * 1000)
             : null,
@@ -280,38 +295,38 @@ router.get("/user-info", authenticateToken, async (req: any, res: any) => {
   }
 });
 
+router.put(
+  "/update-user-info",
+  authenticateToken,
+  async (req: any, res: any) => {
+    const { name, email } = req.body;
 
+    if (!name && !email) {
+      return res.status(400).json({ error: "No data to update" });
+    }
 
-router.put("/update-user-info", authenticateToken,  async (req: any, res:any) => {
-  const { name, email } = req.body;
+    try {
+      const updated = await client.users.update({
+        where: { id: req.userId },
+        data: {
+          ...(name && { name }),
+          ...(email && { email }),
+        },
+      });
 
-  if (!name && !email) {
-    return res.status(400).json({ error: "No data to update" });
+      res.status(200).json({
+        message: "User updated successfully",
+        user: {
+          name: updated.name,
+          email: updated.email,
+          role: updated.role,
+        },
+      });
+    } catch (err) {
+      console.error("Error updating user:", err);
+      res.status(500).json({ error: "Failed to update user" });
+    }
   }
-
-  try {
-    const updated = await client.users.update({
-      where: { id: req.userId },
-      data: {
-        ...(name && { name }),
-        ...(email && { email }),
-      },
-    });
-
-    res.status(200).json({
-      message: "User updated successfully",
-      user: {
-        name: updated.name,
-        email: updated.email,
-        role: updated.role,
-      },
-    });
-  } catch (err) {
-    console.error("Error updating user:", err);
-    res.status(500).json({ error: "Failed to update user" });
-  }
-});
-
-
+);
 
 export { router };

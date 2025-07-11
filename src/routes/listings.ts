@@ -2,6 +2,9 @@ import { Request, Response, Router } from "express";
 import { client } from "../config/clients/index.js";
 import { authenticateToken } from "../middleware/auth.js";
 import { AuthRequest } from "../utils/types.js";
+import Stripe from "stripe";
+import { formatGermanDate } from "../utils/functions.js";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 const router = Router();
 
@@ -92,15 +95,44 @@ router.post(
 router.get(
   "/all-listings",
   authenticateToken,
-  async (req: AuthRequest, res: Response) => {
+  async (req: any, res: any) => {
     const userId = req.userId;
+    
 
     if (!userId) {
       res.status(401).json({ data: null, error: "Unauthorized User" });
       return;
     }
 
+
+
     try {
+       const user = await client.users.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          stripe_customer_id: true,
+        },
+      });
+
+      if (!user || !user.stripe_customer_id) {
+        return res.status(403).json({ data: null, error: "Bitte wähle einen Abonnementplan, um fortzufahren." });
+      }
+
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripe_customer_id,
+        status: "all",
+        expand: ["data.items.data.price"],
+        limit: 1,
+      });
+
+      const subscription = subscriptions.data[0];
+      if (!subscription || subscription.status !== "active") {
+  return res.status(403).json({ data: null, error: "Bitte wähle einen Abonnementplan, um fortzufahren." });
+}
       const listings = await client.listings.findMany({
         where: {
           created_by: userId,
