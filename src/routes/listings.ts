@@ -257,12 +257,30 @@ router.post("/search-listing", async (req: AuthRequest, res: Response) => {
           mode: "insensitive",
         },
       },
+       include: {
+          listing_categories: {
+            select: {
+              name: true,
+            },
+          },
+        },
     });
     if (listings.length == 0) {
       res.status(400).json({ data: null, error: "Kein Eintrag gefunden" });
       return;
     } else {
-      res.status(200).json({ data: listings, error: null });
+     const formattedListings = listings.map((item:any) => ({
+        id: item.id,
+        company_name: item.company_name,
+        address: item.address,
+        description: item.description,
+        telephone: item.telephone,
+        created_at: item.created_at,
+        category: item.listing_categories?.name ?? null,
+        email: item.email,
+        website_url: item.website_url,
+      }));
+      res.status(200).json({ data: formattedListings, error: null });
       return;
     }
   } catch (error) {
