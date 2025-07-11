@@ -27,13 +27,40 @@ router.get("/categories", authenticateToken, async (req, res) => {
 router.post(
   "/create-listing",
   authenticateToken,
-  async (req: AuthRequest, res: Response) => {
+  async (req: any, res: any) => {
     const userId = req.userId;
     if (!userId) {
       res.status(401).json({ data: null, error: "Unauthorized User" });
       return;
     }
     try {
+
+          const user = await client.users.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          stripe_customer_id: true,
+        },
+      });
+
+      if (!user || !user.stripe_customer_id) {
+        return res.status(403).json({ data: null, error: "Bitte wähle einen Abonnementplan, um fortzufahren." });
+      }
+
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripe_customer_id,
+        status: "all",
+        expand: ["data.items.data.price"],
+        limit: 1,
+      });
+
+      const subscription = subscriptions.data[0];
+      if (!subscription || subscription.status !== "active") {
+  return res.status(403).json({ data: null, error: "Bitte wähle einen Abonnementplan, um fortzufahren." });
+}
       const {
         company_name,
         category,
@@ -107,32 +134,7 @@ router.get(
 
 
     try {
-       const user = await client.users.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          stripe_customer_id: true,
-        },
-      });
-
-      if (!user || !user.stripe_customer_id) {
-        return res.status(403).json({ data: null, error: "Bitte wähle einen Abonnementplan, um fortzufahren." });
-      }
-
-      const subscriptions = await stripe.subscriptions.list({
-        customer: user.stripe_customer_id,
-        status: "all",
-        expand: ["data.items.data.price"],
-        limit: 1,
-      });
-
-      const subscription = subscriptions.data[0];
-      if (!subscription || subscription.status !== "active") {
-  return res.status(403).json({ data: null, error: "Bitte wähle einen Abonnementplan, um fortzufahren." });
-}
+   
       const listings = await client.listings.findMany({
         where: {
           created_by: userId,
