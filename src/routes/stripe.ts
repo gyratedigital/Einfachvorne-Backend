@@ -110,7 +110,7 @@ router.post("/user-portal", authenticateToken, async (req: any, res: any) => {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripe_customer_id,
-      return_url: `${process.env.CLIENT_URL}/dashboard`, // Or wherever you want to return after
+      return_url: `${process.env.CLIENT_URL}`, // Or wherever you want to return after
     });
 
     res.json({ url: session.url });
