@@ -223,7 +223,7 @@ router.get("/user-info", authenticateToken, async (req: any, res: any) => {
 
       const subscription = subscriptions.data[0];
 
-      if (subscription) {
+      if (subscription && (subscription.status === "past_due" || subscription.status === "active")) {
         const item = subscription.items.data[0];
         const price = item?.price;
 
