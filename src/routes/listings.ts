@@ -286,50 +286,6 @@ router.post("/search-listing", async (req: AuthRequest, res: Response) => {
   }
 });
 
-router.post("/listings", async (req: AuthRequest, res: Response) => {
-  const { page } = req.body;
-  const perPage = 6;
-  try {
-    const totalCount = await client.listings.count();
-    const listings = await client.listings.findMany({
-      take: perPage,
-      skip: (page - 1) * perPage,
-      include: {
-        listing_categories: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
-    const totalPages = Math.ceil(totalCount / perPage);
-    const formattedListings = listings.map((item: any) => ({
-      id: item.id,
-      company_name: item.company_name,
-      address: item.address,
-      description: item.description,
-      telephone: item.telephone,
-      created_at: item.created_at,
-      category: item.listing_categories?.name ?? null,
-      email: item.email,
-      website_url: item.website_url,
-    }));
-
-    res.status(200).json({
-      data: formattedListings,
-      totalPages,
-      currentPage: page,
-      error: null,
-    });
-    return;
-  } catch (error) {
-    console.error("Error fetching all listings:", error);
-    res.status(500).json({
-      data: null,
-      error: "Internal Server Error",
-    });
-  }
-});
 
 router.post(
   "/view-my-listing",
@@ -503,5 +459,75 @@ router.delete(
     }
   }
 );
+
+
+router.post("/listings", async (req: AuthRequest, res: Response) => {
+  const { page, search , categorySlug } = req.body;
+  const perPage = 6;
+
+  try {
+    const whereClause: any = {};
+
+    if (search.trim() !== "") {
+      whereClause.OR = [
+        { company_name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { address: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    if (categorySlug.trim() !== "") {
+      whereClause.listing_categories = {
+        slug: categorySlug,
+      };
+    }
+
+    const totalCount = await client.listings.count({
+      where: whereClause,
+    });
+
+    const listings = await client.listings.findMany({
+      where: whereClause,
+      take: perPage,
+      skip: (page - 1) * perPage,
+      include: {
+        listing_categories: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
+
+    const totalPages = Math.ceil(totalCount / perPage);
+
+    const formattedListings = listings.map((item: any) => ({
+      id: item.id,
+      company_name: item.company_name,
+      address: item.address,
+      description: item.description,
+      telephone: item.telephone,
+      created_at: item.created_at,
+      category: item.listing_categories?.name ?? null,
+      email: item.email,
+      website_url: item.website_url,
+    }));
+
+    res.status(200).json({
+      data: formattedListings,
+      totalPages,
+      currentPage: page,
+      error: null,
+    });
+  } catch (error) {
+    console.error("Error fetching listings:", error);
+    res.status(500).json({
+      data: null,
+      error: "Internal Server Error",
+    });
+  }
+});
 
 export { router };
