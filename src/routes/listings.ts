@@ -34,8 +34,7 @@ router.post(
       return;
     }
     try {
-
-          const user = await client.users.findUnique({
+      const user = await client.users.findUnique({
         where: { id: userId },
         select: {
           id: true,
@@ -47,7 +46,10 @@ router.post(
       });
 
       if (!user || !user.stripe_customer_id) {
-        return res.status(403).json({ data: null, error: "Bitte wähle einen Abonnementplan, um fortzufahren." });
+        return res.status(403).json({
+          data: null,
+          error: "Bitte wähle einen Abonnementplan, um fortzufahren.",
+        });
       }
 
       const subscriptions = await stripe.subscriptions.list({
@@ -59,8 +61,11 @@ router.post(
 
       const subscription = subscriptions.data[0];
       if (!subscription || subscription.status !== "active") {
-  return res.status(403).json({ data: null, error: "Bitte wähle einen Abonnementplan, um fortzufahren." });
-}
+        return res.status(403).json({
+          data: null,
+          error: "Bitte wähle einen Abonnementplan, um fortzufahren.",
+        });
+      }
       const {
         company_name,
         category,
@@ -119,61 +124,53 @@ router.post(
   }
 );
 
-router.get(
-  "/all-listings",
-  authenticateToken,
-  async (req: any, res: any) => {
-    const userId = req.userId;
-    
+router.get("/all-listings", authenticateToken, async (req: any, res: any) => {
+  const userId = req.userId;
 
-    if (!userId) {
-      res.status(401).json({ data: null, error: "Unauthorized User" });
-      return;
-    }
+  if (!userId) {
+    res.status(401).json({ data: null, error: "Unauthorized User" });
+    return;
+  }
 
-
-
-    try {
-   
-      const listings = await client.listings.findMany({
-        where: {
-          created_by: userId,
-        },
-        include: {
-          listing_categories: {
-            select: {
-              name: true,
-            },
+  try {
+    const listings = await client.listings.findMany({
+      where: {
+        created_by: userId,
+      },
+      include: {
+        listing_categories: {
+          select: {
+            name: true,
           },
         },
-      });
+      },
+    });
 
-      const formattedListings = listings.map((item:any) => ({
-        id: item.id,
-        company_name: item.company_name,
-        address: item.address,
-        description: item.description,
-        telephone: item.telephone,
-        created_at: item.created_at,
-        category: item.listing_categories?.name ?? null,
-        email: item.email,
-        website_url: item.website_url,
-      }));
+    const formattedListings = listings.map((item: any) => ({
+      id: item.id,
+      company_name: item.company_name,
+      address: item.address,
+      description: item.description,
+      telephone: item.telephone,
+      created_at: item.created_at,
+      category: item.listing_categories?.name ?? null,
+      email: item.email,
+      website_url: item.website_url,
+    }));
 
-      res.status(200).json({
-        data: formattedListings,
-        error: null,
-      });
-      return;
-    } catch (error) {
-      console.error("Error fetching all listings:", error);
-      res.status(500).json({
-        data: null,
-        error: "Internal Server Error",
-      });
-    }
+    res.status(200).json({
+      data: formattedListings,
+      error: null,
+    });
+    return;
+  } catch (error) {
+    console.error("Error fetching all listings:", error);
+    res.status(500).json({
+      data: null,
+      error: "Internal Server Error",
+    });
   }
-);
+});
 
 router.post(
   "/edit-listing",
@@ -257,19 +254,19 @@ router.post("/search-listing", async (req: AuthRequest, res: Response) => {
           mode: "insensitive",
         },
       },
-       include: {
-          listing_categories: {
-            select: {
-              name: true,
-            },
+      include: {
+        listing_categories: {
+          select: {
+            name: true,
           },
         },
+      },
     });
     if (listings.length == 0) {
       res.status(400).json({ data: null, error: "Kein Eintrag gefunden" });
       return;
     } else {
-     const formattedListings = listings.map((item:any) => ({
+      const formattedListings = listings.map((item: any) => ({
         id: item.id,
         company_name: item.company_name,
         address: item.address,
@@ -291,7 +288,7 @@ router.post("/search-listing", async (req: AuthRequest, res: Response) => {
 
 router.post("/listings", async (req: AuthRequest, res: Response) => {
   const { page } = req.body;
-const perPage = 6;
+  const perPage = 6;
   try {
     const totalCount = await client.listings.count();
     const listings = await client.listings.findMany({
@@ -305,8 +302,8 @@ const perPage = 6;
         },
       },
     });
-const totalPages = Math.ceil(totalCount / perPage);
-    const formattedListings = listings.map((item:any) => ({
+    const totalPages = Math.ceil(totalCount / perPage);
+    const formattedListings = listings.map((item: any) => ({
       id: item.id,
       company_name: item.company_name,
       address: item.address,
@@ -352,7 +349,7 @@ router.post(
           listing_categories: {
             select: {
               name: true,
-              id:true
+              id: true,
             },
           },
         },
@@ -366,8 +363,8 @@ router.post(
           telephone: listing.telephone,
           created_at: listing.created_at,
           category: {
-            id:listing.listing_categories?.id,
-            name:listing.listing_categories?.name,
+            id: listing.listing_categories?.id,
+            name: listing.listing_categories?.name,
           },
           email: listing.email,
           website_url: listing.website_url,
@@ -392,61 +389,119 @@ router.post(
     }
   }
 );
-router.post(
-  "/listing-detail",
-  async (req: AuthRequest, res: Response) => {
-    const userId = req.userId;
+router.post("/listing-detail", async (req: AuthRequest, res: Response) => {
+  const userId = req.userId;
+  const { listing_id } = req.body;
+
+  try {
+    const listing = await client.listings.findFirst({
+      where: {
+        id: listing_id,
+        created_by: userId,
+      },
+
+      include: {
+        listing_categories: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
+      },
+    });
+    if (listing) {
+      const formattedListing = {
+        id: listing.id,
+        company_name: listing.company_name,
+        address: listing.address,
+        description: listing.description,
+        telephone: listing.telephone,
+        created_at: listing.created_at,
+        category: {
+          id: listing.listing_categories?.id,
+          name: listing.listing_categories?.name,
+        },
+        email: listing.email,
+        website_url: listing.website_url,
+      };
+      res.status(200).json({
+        data: formattedListing,
+        error: null,
+      });
+      return;
+    } else {
+      res.status(400).json({
+        data: null,
+        error: "Business not found",
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching all listings:", error);
+    res.status(500).json({
+      data: null,
+      error: "Internal Server Error",
+    });
+  }
+});
+router.delete(
+  "/delete-listing",
+  authenticateToken,
+  async (req: any, res: any) => {
     const { listing_id } = req.body;
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({ data: null, error: "Unauthorized user" });
+    }
+
+    if (!listing_id) {
+      return res
+        .status(400)
+        .json({ data: null, error: "No listing ID provided" });
+    }
 
     try {
       const listing = await client.listings.findFirst({
         where: {
           id: listing_id,
-          created_by: userId,
         },
-
-        include: {
-          listing_categories: {
-            select: {
-              name: true,
-              id:true
-            },
-          },
+        select: {
+          created_by: true,
         },
       });
-      if (listing) {
-        const formattedListing = {
-          id: listing.id,
-          company_name: listing.company_name,
-          address: listing.address,
-          description: listing.description,
-          telephone: listing.telephone,
-          created_at: listing.created_at,
-          category: {
-            id:listing.listing_categories?.id,
-            name:listing.listing_categories?.name,
-          },
-          email: listing.email,
-          website_url: listing.website_url,
-        };
-        res.status(200).json({
-          data: formattedListing,
-          error: null,
-        });
-        return;
-      } else {
-        res.status(400).json({
+
+      if (!listing) {
+        return res.status(404).json({ data: null, error: "Listing not found" });
+      }
+
+      if (listing.created_by !== userId) {
+        return res.status(403).json({
           data: null,
-          error: "Business not found",
+          error: "Sie haben keine Berechtigung, dieses Unternehmen zu löschen",
         });
       }
-    } catch (error) {
-      console.error("Error fetching all listings:", error);
-      res.status(500).json({
-        data: null,
-        error: "Internal Server Error",
+
+      await client.listings.delete({
+        where: {
+          id: listing_id,
+        },
       });
+
+      return res
+        .status(200)
+        .json({ data: "Listing deleted successfully", error: null });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(
+          `Error deleting listing with ID ${listing_id}:`,
+          error.message
+        );
+      }
+      return res
+        .status(500)
+        .json({ data: null, error: "Internal Server Error" });
     }
   }
 );
+
 export { router };
