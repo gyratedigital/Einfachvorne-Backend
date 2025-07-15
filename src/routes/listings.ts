@@ -472,8 +472,8 @@ router.post("/listings", async (req: AuthRequest, res: Response) => {
       whereClause.OR = [
         { company_name: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
-        { address: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
+        // { address: { contains: search, mode: "insensitive" } },
+        // { email: { contains: search, mode: "insensitive" } },
       ];
     }
 
